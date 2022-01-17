@@ -36,6 +36,25 @@ def fib(n: int) -> int:
 print(fib(100))  # 354224848179261915075
 ```
 
+Caching with an LRU cache:
+
+```py
+from cachingutils import LRUCache, cached
+
+
+@cached(cache=LRUCache(2, timeout=60), include_posargs=[0])
+def fetch_thing(thing_id: int, thing_name: str) -> tuple[int, str]:
+    return thing_id, thing_name  # Imagine this is a call to an API
+
+print(fetch_thing(123, "456"))  # (123, "456")
+print(fetch_thing(123, "789"))  # (123, "456")
+
+fetch_thing(567, "789")
+fetch_thing(789, "456")
+
+print(fetch_thing(123, "456"))  # Cache miss
+```
+
 Async caching:
 
 ```py
@@ -118,4 +137,25 @@ print(my_cache["abc"])  # 123
 sleep(6)
 
 print(my_cache["abc"])  # KeyError: 'abc'
+```
+
+---
+
+All of the above decorators also work within classes:
+
+```py
+from cachingutils import cached
+
+
+class MyClass:
+    @cached()
+    def fib(self, n: int) -> int:
+        if n < 2:
+            return n
+        return self.fib(n - 1) + self.fib(n - 2)
+
+
+my_class = MyClass()
+
+print(my_class.fib(100))  # 354224848179261915075
 ```
