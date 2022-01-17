@@ -1,5 +1,7 @@
-from time import sleep, time
+from time import time
 from typing import Generic, TypeVar
+
+from lru import LRU
 
 KT = TypeVar("KT")
 VT = TypeVar("VT")
@@ -26,7 +28,7 @@ class _Expirable(Generic[VT]):
 class Cache(Generic[KT, VT]):
     def __init__(self, values: dict[KT, VT] = None, timeout: float = None) -> None:
         self._items: dict[KT, _Expirable[VT]] = (
-            {key: _Expirable(values, timeout) for key, values in values.items()} if values else {}
+            {key: _Expirable(value, timeout) for key, value in values.items()} if values else {}
         )
         self._timeout = timeout
 
@@ -49,3 +51,14 @@ class Cache(Generic[KT, VT]):
 
     def __contains__(self, key: KT) -> bool:
         return key in self._items and not self._items[key].expired
+
+
+class LRUCache(Cache[KT, VT]):
+    def __init__(self, max_size: int, values: dict[KT, VT] = None, timeout: float = None) -> None:
+        self._items: LRU = LRU(max_size)
+
+        if values:
+            for key, value in values.items():
+                self._items[key] = _Expirable(value, timeout)
+
+        self._timeout = timeout

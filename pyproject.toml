@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cachingutils"
-version = "1.0.2"
+version = "1.0.3"
 description = "Utilities to make caching data easier"
 authors = ["vcokltfre <vcokltfre@gmail.com>"]
 license = "MIT"
@@ -9,6 +9,7 @@ repository = "https://github.com/vcokltfre/cachingutils"
 
 [tool.poetry.dependencies]
 python = "^3.10"
+lru-dict = "^1.1.7"
 
 [tool.poetry.dev-dependencies]
 black = "^21.12b0"
