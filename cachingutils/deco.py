@@ -38,9 +38,15 @@ def _get_sig(
 
     if include_posargs:
         _extend_posargs(signature, include_posargs, *args)
+    else:
+        for arg in args:
+            signature.append(hash(arg))
 
     if include_kwargs:
         _extend_kwargs(signature, include_kwargs, allow_unset, **kwargs)
+    else:
+        for name, value in kwargs.items():
+            signature.append(hash((name, value)))
 
     return tuple(signature)
 
