@@ -16,7 +16,7 @@ def fib(n: int) -> int:
         return n
     return fib(n - 1) + fib(n - 2)
 
-print(fib(100))  # 633825300114114700748351602688
+print(fib(100))  # 354224848179261915075
 ```
 
 Caching with your own cache object:
@@ -33,7 +33,7 @@ def fib(n: int) -> int:
         return n
     return fib(n - 1) + fib(n - 2)
 
-print(fib(100))  # 633825300114114700748351602688
+print(fib(100))  # 354224848179261915075
 ```
 
 Async caching:
@@ -50,7 +50,7 @@ async def fib(n: int) -> int:
         return n
     return await fib(n - 1) + await fib(n - 2)
 
-print(run(fib(100)))  # 633825300114114700748351602688
+print(run(fib(100)))  # 354224848179261915075
 ```
 
 Caching specific positional args:
