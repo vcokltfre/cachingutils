@@ -25,9 +25,7 @@ def _extend_kwargs(sig: list, _kwargs: list[str], **kwargs) -> None:
         sig.append(hashed)
 
 
-def _get_sig(
-    include_posargs: list[int] = None, include_kwargs: list[str] = None, *args, **kwargs
-) -> Sequence[int]:
+def _get_sig(include_posargs: list[int] = None, include_kwargs: list[str] = None, *args, **kwargs) -> Sequence[int]:
     signature = []
 
     if include_posargs:

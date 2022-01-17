@@ -26,9 +26,7 @@ class _Expirable(Generic[VT]):
 class Cache(Generic[KT, VT]):
     def __init__(self, values: dict[KT, VT] = None, timeout: float = None) -> None:
         self._items: dict[KT, _Expirable[VT]] = (
-            {key: _Expirable(values, timeout) for key, values in values.items()}
-            if values
-            else {}
+            {key: _Expirable(values, timeout) for key, values in values.items()} if values else {}
         )
         self._timeout = timeout
 
