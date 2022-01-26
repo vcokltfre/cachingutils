@@ -1,5 +1,5 @@
 from time import time
-from typing import Generic, TypeVar
+from typing import Generic, Optional, TypeVar, Union
 
 from lru import LRU
 
@@ -43,7 +43,7 @@ class Cache(Generic[KT, VT]):
     def __setitem__(self, key: KT, value: VT) -> None:
         self._items[key] = _Expirable(value, self._timeout)
 
-    def get(self, key: KT, default: T | None = None) -> VT | T | None:
+    def get(self, key: KT, default: Optional[T] = None) -> Union[VT, T, None]:
         try:
             return self[key]
         except KeyError:

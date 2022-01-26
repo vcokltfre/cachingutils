@@ -1,5 +1,11 @@
 from functools import wraps
-from typing import Any, Awaitable, Callable, ParamSpec, Sequence, TypeVar
+from typing import Any, Awaitable, Callable, Sequence, TypeVar
+
+try:
+    from typing import ParamSpec
+except ImportError:
+    # python 3.9
+    from typing_extensions import ParamSpec
 
 from .cache import Cache
 
