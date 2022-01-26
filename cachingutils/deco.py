@@ -71,10 +71,12 @@ def cached(
         def wrapper(*args, **kwargs) -> T:
             sig = _get_sig(include_posargs, include_kwargs, allow_unset, *args, **kwargs)
 
-            if value := _cache.get(sig):
-                return value
+            try:
+                return _cache[sig]
+            except KeyError:
+                pass
 
-            retval = func(*args, **kwargs)
+            retval: T = func(*args, **kwargs)
 
             _cache[sig] = retval
 
@@ -99,8 +101,10 @@ def acached(
         async def awrapper(*args, **kwargs) -> T:
             sig = _get_sig(include_posargs, include_kwargs, allow_unset, *args, **kwargs)
 
-            if value := _cache.get(sig):
-                return value
+            try:
+                return _cache[sig]
+            except KeyError:
+                pass
 
             retval: T = await func(*args, **kwargs)
 
