@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cachingutils"
-version = "1.0.3"
+version = "1.0.6"
 description = "Utilities to make caching data easier"
 authors = ["vcokltfre <vcokltfre@gmail.com>"]
 license = "MIT"
