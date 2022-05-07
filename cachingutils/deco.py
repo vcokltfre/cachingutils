@@ -1,19 +1,25 @@
+from asyncio import iscoroutine
 from functools import wraps
-from typing import Any, Awaitable, Callable, Sequence, TypeVar
+from typing import (
+    Any,
+    Callable,
+    Coroutine,
+    Optional,
+    ParamSpec,
+    Sequence,
+    TypeVar,
+    Union,
+)
 
-try:
-    from typing import ParamSpec
-except ImportError:
-    # python 3.9
-    from typing_extensions import ParamSpec
-
-from .cache import Cache
+from .cache import MemoryCache
+from .proto import AsyncCache, Cache
 
 P = ParamSpec("P")
 T = TypeVar("T")
+UNSET = object()
 
 
-def _extend_posargs(sig: list, posargs: list[int], *args) -> None:
+def _extend_posargs(sig: list[int], posargs: list[int], *args: Any) -> None:
     for i in posargs:
         val = args[i]
 
@@ -22,7 +28,7 @@ def _extend_posargs(sig: list, posargs: list[int], *args) -> None:
         sig.append(hashed)
 
 
-def _extend_kwargs(sig: list, _kwargs: list[str], allow_unset: bool = False, **kwargs) -> None:
+def _extend_kwargs(sig: list[int], _kwargs: list[str], allow_unset: bool = False, **kwargs: Any) -> None:
     for name in _kwargs:
         try:
             val = kwargs[name]
@@ -38,9 +44,14 @@ def _extend_kwargs(sig: list, _kwargs: list[str], allow_unset: bool = False, **k
 
 
 def _get_sig(
-    include_posargs: list[int] = None, include_kwargs: list[str] = None, allow_unset: bool = False, *args, **kwargs
+    func: Callable[..., Any],
+    args: Any,
+    kwargs: Any,
+    include_posargs: Optional[list[int]] = None,
+    include_kwargs: Optional[list[str]] = None,
+    allow_unset: bool = False,
 ) -> Sequence[int]:
-    signature = []
+    signature: list[int] = [id(func)]
 
     if include_posargs:
         _extend_posargs(signature, include_posargs, *args)
@@ -57,61 +68,67 @@ def _get_sig(
     return tuple(signature)
 
 
+async def _maybe_async(value: Union[T, Coroutine[T, None, None]]) -> T:
+    if iscoroutine(value):
+        return await value
+    return value  # type: ignore
+
+
 def cached(
-    timeout: float = None,
-    include_posargs: list[int] = None,
-    include_kwargs: list[str] = None,
+    timeout: Optional[float] = None,
+    include_posargs: Optional[list[int]] = None,
+    include_kwargs: Optional[list[str]] = None,
     allow_unset: bool = False,
-    cache: Cache = None,
+    cache: Optional[Cache] = None,
 ) -> Callable[[Callable[P, T]], Callable[P, T]]:
-    _cache: Cache[Sequence[int], Any] = cache or Cache(timeout=timeout)
+    _cache: Cache = cache or MemoryCache[Any, Any](timeout=timeout)
 
     def decorator(func: Callable[P, T]) -> Callable[P, T]:
         @wraps(func)
-        def wrapper(*args, **kwargs) -> T:
-            sig = _get_sig(include_posargs, include_kwargs, allow_unset, *args, **kwargs)
+        def wrapper(*args: Any, **kwargs: Any) -> T:
+            sig = _get_sig(func, args, kwargs, include_posargs, include_kwargs, allow_unset=allow_unset)
 
             try:
                 return _cache[sig]
             except KeyError:
                 pass
 
-            retval: T = func(*args, **kwargs)
+            result = func(*args, **kwargs)  # type: ignore
 
-            _cache[sig] = retval
+            _cache[sig] = result
 
-            return retval
+            return result
 
-        return wrapper
+        return wrapper  # type: ignore
 
     return decorator
 
 
-def acached(
-    timeout: float = None,
-    include_posargs: list[int] = None,
-    include_kwargs: list[str] = None,
+def async_cached(
+    timeout: Optional[float] = None,
+    include_posargs: Optional[list[int]] = None,
+    include_kwargs: Optional[list[str]] = None,
     allow_unset: bool = False,
-    cache: Cache = None,
-) -> Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]:
-    _cache: Cache[Sequence[int], Any] = cache or Cache(timeout=timeout)
+    cache: Optional[Union[Cache, AsyncCache]] = None,
+) -> Callable[[Callable[P, T]], Callable[P, T]]:
+    _cache: Union[Cache, AsyncCache] = cache or MemoryCache[Any, Any](timeout=timeout)
 
-    def decorator(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
+    def decorator(func: Callable[P, T]) -> Callable[P, T]:
         @wraps(func)
-        async def awrapper(*args, **kwargs) -> T:
-            sig = _get_sig(include_posargs, include_kwargs, allow_unset, *args, **kwargs)
+        async def wrapper(*args: Any, **kwargs: Any) -> T:
+            sig = _get_sig(func, args, kwargs, include_posargs, include_kwargs, allow_unset=allow_unset)
 
-            try:
-                return _cache[sig]
-            except KeyError:
-                pass
+            value = await _maybe_async(_cache.get(sig, UNSET))
 
-            retval: T = await func(*args, **kwargs)
+            if value is not UNSET:
+                return value
 
-            _cache[sig] = retval
+            result: T = await func(*args, **kwargs)  # type: ignore
 
-            return retval
+            await _maybe_async(_cache.set(sig, result))
 
-        return awrapper
+            return result
+
+        return wrapper  # type: ignore
 
     return decorator
