@@ -1,11 +1,13 @@
+from __future__ import annotations
+
 from asyncio import iscoroutine
 from functools import wraps
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Coroutine,
     Optional,
-    ParamSpec,
     Sequence,
     TypeVar,
     Union,
@@ -14,8 +16,12 @@ from typing import (
 from .cache import MemoryCache
 from .proto import AsyncCache, Cache
 
-P = ParamSpec("P")
-T = TypeVar("T")
+if TYPE_CHECKING:
+    from typing_extensions import ParamSpec
+
+    P = ParamSpec("P")
+    T = TypeVar("T")
+
 UNSET = object()
 
 
