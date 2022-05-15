@@ -1,7 +1,7 @@
 from datetime import timedelta
 from json import dumps, loads
+from pickle import dumps, loads
 from typing import Any, Generic, Optional, Protocol, Type, TypeVar, Union, overload
-from pickle import loads, dumps
 
 from redis import Redis
 from redis.asyncio import Redis as AsyncRedis  # type: ignore
