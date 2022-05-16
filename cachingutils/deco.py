@@ -59,13 +59,13 @@ def _get_sig(
 ) -> Sequence[int]:
     signature: list[int] = [id(func)]
 
-    if include_posargs:
+    if include_posargs is not None:
         _extend_posargs(signature, include_posargs, *args)
     else:
         for arg in args:
             signature.append(hash(arg))
 
-    if include_kwargs:
+    if include_kwargs is not None:
         _extend_kwargs(signature, include_kwargs, allow_unset, **kwargs)
     else:
         for name, value in kwargs.items():
