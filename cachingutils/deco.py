@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from asyncio import iscoroutine
+from datetime import timedelta
 from functools import wraps
 from typing import (
     TYPE_CHECKING,
@@ -81,7 +82,7 @@ async def _maybe_async(value: Union[T, Coroutine[T, None, None]]) -> T:
 
 
 def cached(
-    timeout: Optional[float] = None,
+    timeout: Optional[Union[int, float, timedelta]] = None,
     include_posargs: Optional[list[int]] = None,
     include_kwargs: Optional[list[str]] = None,
     allow_unset: bool = False,
@@ -111,7 +112,7 @@ def cached(
 
 
 def async_cached(
-    timeout: Optional[float] = None,
+    timeout: Optional[Union[int, float, timedelta]] = None,
     include_posargs: Optional[list[int]] = None,
     include_kwargs: Optional[list[str]] = None,
     allow_unset: bool = False,

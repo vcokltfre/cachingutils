@@ -1,5 +1,6 @@
+from datetime import timedelta
 from time import time
-from typing import Generic, Optional, TypeVar, overload
+from typing import Generic, Optional, TypeVar, Union, overload
 
 from lru import LRU  # type: ignore
 
@@ -28,11 +29,18 @@ class MemoryCache(Generic[KT, VT]):
         "_timeout",
     )
 
-    def __init__(self, items: Optional[dict[KT, VT]] = None, timeout: Optional[float] = None) -> None:
+    def __init__(
+        self,
+        items: Optional[dict[KT, VT]] = None,
+        timeout: Optional[Union[float, int, timedelta]] = None,
+    ) -> None:
+        if isinstance(timeout, timedelta):
+            timeout = timeout.total_seconds()
+
         self._items: dict[KT, _Expirable[VT]] = {
             key: _Expirable(value, timeout) for key, value in (items or {}).items() if value
         }
-        self._timeout: Optional[float] = timeout
+        self._timeout: Optional[Union[float, int]] = timeout
 
     def __getitem__(self, key: KT) -> VT:
         item = self._items[key]
@@ -63,7 +71,9 @@ class MemoryCache(Generic[KT, VT]):
         except KeyError:
             return default or None
 
-    def set(self, key: KT, value: VT, timeout: Optional[float] = None) -> None:
+    def set(self, key: KT, value: VT, timeout: Optional[Union[float, int, timedelta]] = None) -> None:
+        if isinstance(timeout, timedelta):
+            timeout = timeout.total_seconds()
         self._items[key] = _Expirable(value, timeout or self._timeout)
 
     def purge(self) -> int:
@@ -78,8 +88,16 @@ class MemoryCache(Generic[KT, VT]):
 
 
 class LRUMemoryCache(MemoryCache[KT, VT]):
-    def __init__(self, max_size: int, items: Optional[dict[KT, VT]] = None, timeout: Optional[float] = None) -> None:
+    def __init__(
+        self,
+        max_size: int,
+        items: Optional[dict[KT, VT]] = None,
+        timeout: Optional[Union[float, int, timedelta]] = None,
+    ) -> None:
         self._items: dict[KT, _Expirable[VT]] = LRU(max_size)
+
+        if isinstance(timeout, timedelta):
+            timeout = timeout.total_seconds()
 
         if items:
             for key, value in items.items():
