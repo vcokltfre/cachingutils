@@ -9,6 +9,7 @@ from typing import (
     Callable,
     Coroutine,
     Optional,
+    Protocol,
     Sequence,
     TypeVar,
     Union,
@@ -21,7 +22,9 @@ if TYPE_CHECKING:
     from typing_extensions import ParamSpec
 
     P = ParamSpec("P")
-    T = TypeVar("T")
+else:
+    P = TypeVar("P")
+T = TypeVar("T")
 
 UNSET = object()
 
@@ -81,16 +84,29 @@ async def _maybe_async(value: Union[T, Coroutine[T, None, None]]) -> T:
     return value  # type: ignore
 
 
+class Cached(Protocol[P, T]):
+
+    cache: Cache
+
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> T:
+        ...
+
+
+class AsyncCached(Cached[P, T]):
+    async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> "str":
+        ...
+
+
 def cached(
     timeout: Optional[Union[int, float, timedelta]] = None,
     include_posargs: Optional[list[int]] = None,
     include_kwargs: Optional[list[str]] = None,
     allow_unset: bool = False,
     cache: Optional[Cache] = None,
-) -> Callable[[Callable[P, T]], Callable[P, T]]:
+) -> Callable[[Callable[P, T]], Cached[P, T]]:
     _cache: Cache = cache or MemoryCache[Any, Any](timeout=timeout)
 
-    def decorator(func: Callable[P, T]) -> Callable[P, T]:
+    def decorator(func: Callable[P, T]) -> Cached[P, T]:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> T:
             sig = _get_sig(func, args, kwargs, include_posargs, include_kwargs, allow_unset=allow_unset)
@@ -106,6 +122,8 @@ def cached(
 
             return result
 
+        wrapper.cache = _cache
+
         return wrapper  # type: ignore
 
     return decorator
@@ -117,10 +135,10 @@ def async_cached(
     include_kwargs: Optional[list[str]] = None,
     allow_unset: bool = False,
     cache: Optional[Union[Cache, AsyncCache]] = None,
-) -> Callable[[Callable[P, T]], Callable[P, T]]:
+) -> Callable[[Callable[P, T]], AsyncCached[P, T]]:
     _cache: Union[Cache, AsyncCache] = cache or MemoryCache[Any, Any](timeout=timeout)
 
-    def decorator(func: Callable[P, T]) -> Callable[P, T]:
+    def decorator(func: Callable[P, T]) -> AsyncCached[P, T]:
         @wraps(func)
         async def wrapper(*args: Any, **kwargs: Any) -> T:
             sig = _get_sig(func, args, kwargs, include_posargs, include_kwargs, allow_unset=allow_unset)
@@ -135,6 +153,8 @@ def async_cached(
             await _maybe_async(_cache.set(sig, result))
 
             return result
+
+        wrapper.cache = _cache
 
         return wrapper  # type: ignore
 
