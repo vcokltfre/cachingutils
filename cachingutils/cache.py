@@ -54,6 +54,9 @@ class MemoryCache(Generic[KT, VT]):
     def __setitem__(self, key: KT, value: VT) -> None:
         self._items[key] = _Expirable(value, self._timeout)
 
+    def __delitem__(self, key: KT) -> None:
+        del self._items[key]
+
     def __contains__(self, key: KT) -> bool:
         return key in self._items and not self._items[key].expired
 
